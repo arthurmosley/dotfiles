@@ -1,0 +1,118 @@
+from typing import List
+
+def test_function_1(num: int) -> None:
+    if num == 1:
+        print(num)
+    else:
+        print("Yeah the number isn't 1, it's", num)
+
+
+test_function_1(5)
+
+# Count visible towers problem in python. Done from memory.
+
+def countVisibleTowers_lr(height):
+    num_towers = len(height)
+    previous = [] # my stack (stores only towers that can still block future ones.)
+    answer_left_right = [] # amount of towers can see to the left
+
+    for tower in range(num_towers):
+        # Finding: "How many towers to the left can this one see?"
+        while True:
+            # --- CASE A: no candidate blockers on the stack.
+            if len(previous) == 0:
+                # Nothing taller remains on our left, we see all previous towers.
+                answer_left_right.append(tower)
+                # pushing the initial future candidate blocker
+                previous.append(tower)
+                break
+            # --- CASE B: There is at least one candidate blocker
+            # prev_tall is previous[-1] because it is the newest left-of-curr candidate added to the stack
+            # ie. the last index pushed.
+            prev_tall = previous[-1]
+
+            print("This is prev_tall: ", prev_tall, "\n")
+            if height[tower] < height[prev_tall]:
+                # Checking if the current candidate is taller. If true - it is the blocker
+                # ie. you can see every tower between prev_tall and you.
+                # count = (current tower index) - (blocking tower index)
+                # below line will calculate the distance between the "blocker" and the current.
+                # ie. how many there are between.
+                answer_left_right.append(tower - prev_tall)
+                previous.append(tower)
+                break
+            # -- CASE C: Current Candidate is not taller, the current tower is. 
+            previous.pop()
+        print("This is previous: ", previous, "\n")
+        print("This is answer_left_right: ", answer_left_right, "\n")
+            
+    return answer_left_right
+
+
+def countVisibleTowers(height):
+    answer_lr = countVisibleTowers_lr(height)
+    answer_rl = list(reversed(countVisibleTowers_lr(list(reversed(height)))))
+    answer = []
+    for i in range(len(height)):
+        answer.append(answer_lr[i] + answer_rl[i])
+
+    return answer
+
+test1 = [5, 2, 10, 1]
+
+# should return [2, 2, 3, 1]
+
+
+
+def groupSort(arr):
+    # frequency counting is O(n) with maps/dictionaries
+    freqs = {}
+    # for n in arr:
+    #     if n not in freqs:
+    #         freqs[n] = 1
+    #     else:
+    #         freqs[n] += 1
+    for n in arr:
+        freqs[n] = freqs.get(n, 0) + 1
+    intermediate = freqs.items()
+    print("This is intermediate", intermediate)
+    # tuple_to_list takes a tuple-list and casts each tuple, x, to a list. nested list.
+    tuple_to_list = [list(x) for x in intermediate]
+    sorted_freq_list = sorted(
+        tuple_to_list,
+        #key = lambda pair: -100000*pair[1] + pair[0]
+        key = lambda pair: (-pair[1], pair[0])
+        # multiply frequency by -1e6 (more negative number
+        #sorts it earlier - python sorts keys ascending)
+        #pair[0] is added as a tie breaker for equal frequencies but different values.
+        # lower value will cause a more neg number and will come first.
+        # more idiomatic way is with tuple based lambda: key = lambda pair: (-pair[1], pair[0])
+        # sorting algo compares frequency first (bigger freq -> more neg -> comes first)
+        # ties for -pair[1], sort by ascending value for pair[0]
+        # my solution works if you can guarantee values won't exceed my multiplier
+        # tuple approach more self-documenting, "Sort by -frequency, then by +value"
+    )
+    
+    return sorted_freq_list
+
+print(groupSort([4,5,6,5,4,3]))
+
+class MinStack:
+    def __init__(self):
+        self.list = []
+        
+    def push(self, val:int) -> None:
+        self.list.append(val)
+        
+    def pop(self) -> None:
+        self.list
+        
+    def top(self) -> int:
+        return self.list[0]
+        
+    def getMin(self) -> int:
+        return min(self.list)
+
+minStack = MinStack();
+minStack.push(1)
+print(minStack.)

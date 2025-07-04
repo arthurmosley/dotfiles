@@ -1,0 +1,23 @@
+(ns hackerrankclj)
+
+(defn groupSort [arr]
+  (let [freqMap (frequencies arr)]
+    (into (sorted-map-by (fn [key1 key2]
+                           (compare [(get freqMap key2) key2]
+                                    [(get freqMap key1) key1])))
+          freqMap)))
+
+(def s1 [4 5 6 5 4 3])
+(frequencies s1)
+(groupSort [4 5 6 5 4 3])
+
+(defn groupSort_idiomatic [coll]
+  (->> coll
+       frequencies
+       (sort-by (juxt (comp - val) key))
+       (into [])))
+
+;; juxt is when you want to run functions on a coll and pack those functions into a new coll.
+;; comp is when you want to run functions one after another, kind of like a pipeline.
+
+(groupSort_idiomatic s1)
