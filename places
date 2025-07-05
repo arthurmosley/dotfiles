@@ -1,14 +1,2 @@
 ;;; -*- coding: utf-8; mode: lisp-data -*-
-(("/home/arthurmosley/emacs/src/data.c" . 97639)
- ("/home/arthurmosley/projects/studying/certara/hackerrankclj.clj"
-  . 2168)
- ("/home/arthurmosley/projects/studying/certara/hackerrank.py" . 1525)
- ("/home/arthurmosley/projects/studying/certara/neetcode-queues.py"
-  . 1330)
- ("/home/arthurmosley/.emacs.d/init.el" . 548)
- ("/home/arthurmosley/.emacs.d/programming/prog.el" . 372)
- ("/home/arthurmosley/.emacs.d/programming/my-clojure.el" . 30)
- ("/home/arthurmosley/.emacs.d/defaults.el" . 30)
- ("/home/arthurmosley/.emacs.d/enhancements.el" . 31)
- ("/home/arthurmosley/.emacs.d/"
-  (dired-filename . "/home/arthurmosley/.emacs.d/enhancements.el")))
+nil

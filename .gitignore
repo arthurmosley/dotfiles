@@ -1,0 +1,29 @@
+# Byte-compiled elisp
+*.elc
+
+# Package downloads (ELPA/MELPA)
+elpa/
+*.tar
+*.zip
+
+# Undo/auto-save/history
+auto-save-list/
+*~
+\#*\#
+.tramp/
+server/
+
+# Cache & sessions
+.cache/
+session/
+undo-tree-history/
+
+# Customization cruft
+custom.el
+custom-*.el
+
+# macOS Finder metadata
+.DS_Store
+
+# VCS directories
+.git/
