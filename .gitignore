@@ -27,3 +27,16 @@ custom-*.el
 
 # VCS directories
 .git/
+
+# savehist and saveplace
+/history
+/places
+
+# — Session, desktop, bookmarks, recentf
+.session/
+desktop-save.el
+.bookmarks
+.recentf
+
+# — macOS Finder metadata
+.DS_Store

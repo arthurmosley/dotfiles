@@ -48,8 +48,9 @@
 	`(("." . ,(concat user-emacs-directory "backups")))))
 
 ;; ensure that universally, meta is on command and super is on alt across any OS.
-(setq x-meta-keysym 'super
-      x-super-keysym 'meta)
+(when (eq system-type 'darwin)
+  (setq x-meta-keysym 'super
+        x-super-keysym 'meta))
 
 (provide 'defaults)
 
