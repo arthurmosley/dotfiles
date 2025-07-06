@@ -16,5 +16,9 @@
 (use-package blacken
   :hook (python-ts-mode . blacken-mode))
 
+;; MacOS specific config for python REPL
+;; Use IPython on macOS for cleaner REPL interaction(when (eq system-type 'darwin)
+
+
 (provide 'my-python)
 ;;; python.el ends here

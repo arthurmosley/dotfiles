@@ -3,7 +3,10 @@
 ;; Handles the first things done in configuring my emacs. Maybe I should separate concerns more?
 
 ;; Setting the theme
-(load-theme 'base16-default-dark t)
+(use-package base16-theme
+  :config
+  ;; load your favorite Base16 palette
+  (load-theme 'base16-default-dark t))
 
 ;; Minimize the UI
 (menu-bar-mode -1)
@@ -43,6 +46,10 @@
 (unless backup-directory-alist
   (setq backup-directory-alist
 	`(("." . ,(concat user-emacs-directory "backups")))))
+
+;; ensure that universally, meta is on command and super is on alt across any OS.
+(setq x-meta-keysym 'super
+      x-super-keysym 'meta)
 
 (provide 'defaults)
 

@@ -1,5 +1,9 @@
 ;; -*- lexical-binding: t -*-
 
+(setq custom-file "~/.emacs-custom")
+(if (file-exists-p custom-file)
+    (load custom-file))
+
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
 			 ("gnu" . "https://elpa.gnu.org/packages/")))
@@ -27,10 +31,7 @@
 (load (expand-file-name "enhancements.el" user-emacs-directory))
 
 ;; folder way??? -- think about this and doing this for everything.
-(add-to-list 'load-path (expand-file-name "programming" user-emacs-directory))
-
-;; Show the help buffer after startup
-(add-hook 'after-init-hook 'help-quick)
+(add-to-list 'load-path (expand-file-name "programming" user-emacs-directory))`q
 
 ;; Show line and column on thpe modeline.
 (setopt line-number-mode t)
@@ -45,23 +46,3 @@
 
 ;;; init.el ends here.
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("4d714a034e7747598869bef1104e96336a71c3d141fa58618e4606a27507db4c"
-     default))
- '(package-selected-packages
-   '(ace-window base16-theme blacken cider corfu dired-subtree
-                doom-themes embark-consult exec-path-from-shell
-                jazz-theme marginalia nerd-icons nerd-icons-completion
-                nerd-icons-corfu nerd-icons-dired orderless paredit
-                rainbow-delimiters smartparens solo-jazz-theme vertico)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
