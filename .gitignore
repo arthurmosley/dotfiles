@@ -31,6 +31,7 @@ custom-*.el
 # savehist and saveplace
 /history
 /places
+/eshell
 
 # — Session, desktop, bookmarks, recentf
 .session/
