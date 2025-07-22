@@ -1,6 +1,0 @@
-from typing import list
-
-def generateParens(n: int) -> List[str]:
-    parens = [""]
-    
-    return parens

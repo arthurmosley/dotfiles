@@ -1,3 +1,0 @@
-pip3 install readline
-brew tap railwaycat/emacsmacport
-brew install --cask emacs-mac
