@@ -26,7 +26,24 @@
   :config
   (exec-path-from-shell-initialize))
 
-(load-theme 'modus-vivendi)
+(defvar my/themes
+  '(modus-operandi modus-vivendi))
+
+(defvar my/theme-index
+  -1
+  "want to assign this once")
+
+(defun my/toggle-emacs-theme ()
+  "Toggle between light-theme and dark-theme"
+  (interactive)
+   (setq my/theme-index (mod (1+ my/theme-index) (length my/themes)))
+    (mapc #'disable-theme custom-enabled-themes)
+    ;; load next theme
+    (load-theme (nth my/theme-index my/themes) t))
+
+(global-set-key (kbd "<f3>") #'my/toggle-emacs-theme)
+
+(load-theme 'modus-operandi)
 
 (use-package doom-modeline
   :ensure t
@@ -52,7 +69,7 @@
 (global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
 
-;; Highlights matching parentheses when curson is on them.
+;; Highlights matching parentheses when cursor is on them.
 (show-paren-mode 1)
 
 (setq-default indent-tabs-mode nil)
@@ -65,6 +82,10 @@
 ;; pick the specific window to go to.
 (use-package ace-window
   :bind ("C-x o" . ace-window))
+
+(use-package winner
+  :config
+  (winner-mode 1))
 
 ;; Send backup files to a specific directory. Going to ignore this in the commits.
 (unless backup-directory-alist
@@ -95,56 +116,6 @@
   :init
   (marginalia-mode))
 
-(use-package embark
-  :bind
-  (("C-." . embark-act)         ;; pick some comfortable binding
-   ("C-;" . embark-dwim)        ;; good alternative: M-.
-   ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
-  :init
-
-  ;; Optionally replace the key help with a completing-read interface
-  (setq prefix-help-command #'embark-prefix-help-command)
-
-  ;; Show the Embark target at point via Eldoc. You may adjust the
-  ;; Eldoc strategy, if you want to see the documentation from
-  ;; multiple providers. Beware that using this can be a little
-  ;; jarring since the message shown in the minibuffer can be more
-  ;; than one line, causing the modeline to move up and down:
-
-  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
-  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
-
-  ;; Add Embark to the mouse context menu. Also enable `context-menu-mode'.
-  ;; (context-menu-mode 1)
-  ;; (add-hook 'context-menu-functions #'embark-context-menu 100)
-
-  :config
-  
-  ;; Hide the mode line of the Embark live/completions buffers
-  (add-to-list 'display-buffer-alist
-               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-                 nil
-                 (window-parameters (mode-line-format . none)))))
-
-;; Consult users will also want the embark-consult package.
-(use-package embark-consult
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
-
-;; Consult - 
-(use-package consult
-  :bind
-  (("C-s" . consult-line)
-   ("C-x b" . consult-buffer)
-   ("M-y" . consult-yank-pop)
-   ("C-x r b" . consult-project-file)
-   ("C-x p f" . consult-project-file)
-   ("C-x p b" . consult-project-buffer)
-   ("M-g g" . consult-goto-line)
-   ("M-g f" . consult-flymake) ;; should I use consult flymake? or flymake in general
-   ))
-
 ;; Corfu - better in buffer completion.
 (use-package corfu
   ;; Optional customizations
@@ -163,6 +134,33 @@
 
   :init
   (global-corfu-mode))
+
+(use-package consult
+  ;; Optional: set a few convenient keybindings up front
+  :bind (("C-s" . consult-line)                ;; better search
+         ("M-y" . consult-yank-pop)            ;; browse kill-ring
+         ("C-x b" . consult-buffer)            ;; better buffer switch
+         ("C-x p f" . consult-project-file))   ;; project files
+  :init
+  ;; make sure project.el knows how to find files before consult hooks in
+  (setq consult-project-function #'consult--default-project-function))
+
+(use-package embark
+  :bind (("C-." . embark-act)         ;; main action menu
+         ("C-;" . embark-dwim)        ;; smart action
+         ("C-h B" . embark-bindings)) ;; what’s bound here?
+  :init
+  ;; show more context in the minibuffer when using embark
+  (setq prefix-help-command #'embark-prefix-help-command))
+
+(use-package embark-consult
+  :after (embark consult)
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+;; Ensure C-x p f *always* runs consult-project-file
+(with-eval-after-load 'consult
+  (keymap-set project-prefix-map "f" #'consult-project-file))
 
 ;; dired file manager
 (use-package dired
@@ -208,7 +206,6 @@
   :hook
   (dired-mode . nerd-icons-dired-mode))
 
-
 (use-package emacs
   :custom
   (tab-always-indent 'complete)
@@ -228,8 +225,36 @@
          ("C-c d r" . devdocs-remove)
          ("C-c d d" . devdocs-lookup)))
 
-(define-key global-map "\C-cl" 'org-store-link)
-(define-key global-map "\C-ca" 'org-agenda)
+(use-package org
+  :bind (("C-c c" . 'org-capture)
+         ("C-c l" . 'org-store-link)
+         ("C-c a" . 'org-agenda))
+  :config
+  ;; need to configure this at some point, useful for creating structure templates.
+  (require 'org-tempo)
+  :custom
+  (setopt org-log-done t)
+  (setopt org-default-notes-file "~/org/notes.org")
+  (setopt org-archive-location "~/org/archives/%s::")
+  (setopt org-todo-keywords '((sequence "ONGO(o)"
+                                        "NEXT(n)"
+                                        "TODO(t)"
+                                        "WAIT(w)"
+                                        "|"
+                                        "DONE(d)"
+                                        "SKIP(s)")))
+  (setopt org-todo-keyword-faces
+	'(("ONGO" . (:inverse-video t))
+	  ("NEXT" . (:weight bold :background "#eeeeee"))
+	  ("WAIT" . (:box t))
+	  ("SKIP" . (:strike-through t)))))
+
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "▶" "▷")))
+
 (setq org-log-done t)
 
 ;; Show line and column on the modeline.
@@ -276,16 +301,21 @@
 
 ;; CLOJURE CONFIG
 (use-package clojure-mode
-  :mode ("\\.clj\\'" "\\.cljs\\'" "\\.cljc\\'" "\\.edn\\'"))
+  :mode ("\\.clj\\'" "\\.cljs\\'" "\\.cljc\\'" "\\.edn\\'")
+  :config
+  (setopt clojure-align-forms-automatically t))
 
 (use-package cider
-  :hook (clojure-mode . cider-mode))
+  :hook (clojure-mode . cider-mode)
+  :config
+  (setq cider-repl-pop-to-buffer-on-connect 'display-only))
 
 (use-package eglot
-  :ensure nil
+  
   :hook ((clojure-mode . eglot-ensure)
          (clojurescript-mode . eglot-ensure)
-         (clojurec-mode . eglot-ensure))
+         (clojurec-mode . eglot-ensure)
+         (python-ts-mode . eglot-ensure))
   :config
   (add-to-list 'eglot-server-programs
                '(clojure-mode . ("clojure-lsp"))))
@@ -300,10 +330,6 @@
 
 (add-hook 'python-ts-mode-hook
           (lambda () (setq indent-tabs-mode nil)))
-
-(use-package eglot
-  :ensure nil
-  :hook (python-ts-mode . eglot-ensure))
 
 (use-package blacken
   :hook (python-ts-mode . blacken-mode))
