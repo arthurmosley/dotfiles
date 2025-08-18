@@ -18,9 +18,18 @@ server/
 session/
 undo-tree-history/
 
-# Customization cruft
+# Customization
 custom.el
 custom-*.el
+
+# more emacs ignores
+bookmarks.eld
+devdocs/
+session.*
+projects.eld
+tramp
+transient/
+tree-sitter/
 
 # macOS Finder metadata
 .DS_Store
