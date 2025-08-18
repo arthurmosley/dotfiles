@@ -26,24 +26,13 @@
   :config
   (exec-path-from-shell-initialize))
 
-(defvar my/themes
-  '(modus-operandi modus-vivendi))
+(delete-selection-mode t)
 
-(defvar my/theme-index
-  -1
-  "want to assign this once")
+(global-set-key (kbd "C-x m") 'eshell)
 
-(defun my/toggle-emacs-theme ()
-  "Toggle between light-theme and dark-theme"
-  (interactive)
-   (setq my/theme-index (mod (1+ my/theme-index) (length my/themes)))
-    (mapc #'disable-theme custom-enabled-themes)
-    ;; load next theme
-    (load-theme (nth my/theme-index my/themes) t))
-
-(global-set-key (kbd "<f3>") #'my/toggle-emacs-theme)
-
-(load-theme 'modus-operandi)
+(use-package zenburn-theme
+  :config
+  (load-theme 'zenburn t))
 
 (use-package doom-modeline
   :ensure t
@@ -304,7 +293,7 @@
   :mode ("\\.clj\\'" "\\.cljs\\'" "\\.cljc\\'" "\\.edn\\'")
   :config
   (setopt clojure-align-forms-automatically t))
-
+ 
 (use-package cider
   :hook (clojure-mode . cider-mode)
   :config
