@@ -6,7 +6,7 @@
 
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			 ("gnu" . "https://elpa.gnu.org/packages/")))
+             ("gnu" . "https://elpa.gnu.org/packages/")))
 (package-initialize)
 
 (unless package-archive-contents
@@ -22,7 +22,8 @@
 
 ;; ensure that Emacs gets my shell's PATH:
 (use-package exec-path-from-shell
-  :ensure t
+  :init
+  (setq exec-path-from-shell-variables '("PATH" "JAVA_HOME"))
   :config
   (exec-path-from-shell-initialize))
 
@@ -64,6 +65,11 @@
 (setq-default indent-tabs-mode nil)
 (savehist-mode 1)
 
+;; Scrolling done right
+(setopt scroll-error-top-bottom t)
+(setopt focus-follows-mouse t)
+(setopt recenter-positions '(top bottom middle))
+
 (use-package which-key
   :ensure nil
   :config (which-key-mode))
@@ -79,7 +85,7 @@
 ;; Send backup files to a specific directory. Going to ignore this in the commits.
 (unless backup-directory-alist
   (setq backup-directory-alist
-	`(("." . ,(concat user-emacs-directory "backups")))))
+    `(("." . ,(concat user-emacs-directory "backups")))))
 
 ;; ensure that universally, meta is on command and super is on alt across any OS.
 (when (eq system-type 'darwin)
@@ -87,6 +93,9 @@
         x-super-keysym 'meta))
 
 ;; Handles the core packages for buffer/file/command running QOL
+
+(use-package origami
+  :hook (clojure-ts-mode . origami-mode))
 
 ;; Enable Vertico - vertical search options 
 (use-package vertico
@@ -107,20 +116,6 @@
 
 ;; Corfu - better in buffer completion.
 (use-package corfu
-  ;; Optional customizations
-  ;; :custom
-  ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-  ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-  ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
-  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
-  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-
-  ;; Enable Corfu only for certain modes. See also `global-corfu-modes'.
-  ;; :hook ((prog-mode . corfu-mode)
-  ;;        (shell-mode . corfu-mode)
-  ;;        (eshell-mode . corfu-mode))
-
   :init
   (global-corfu-mode))
 
@@ -167,7 +162,7 @@
 (use-package dired-subtree
   :after dired
   :bind
-  ( :map dired-mode-map
+  (:map dired-mode-map
     ("<tab>" . dired-subtree-toggle)
     ("TAB" . dired-subtree-toggle)
     ("<backtab>" . dired-subtree-remove)
@@ -201,23 +196,18 @@
   (text-mode-ispell-word-completion nil)
   (read-extended-command-predicate #'command-completion-default-include-p))
 
-;; Persist history over Emacs restarts. Vertico sorts by 
+;; Persist history over Emacs restarts. 
 (use-package savehist
   :init
   (savehist-mode))
-
-;; Documentation packages
-(use-package devdocs
-  :init
-  :commands (devdocs-install devdocs-remove devdocs-lookup)
-  :bind (("C-c d i" . devdocs-install)
-         ("C-c d r" . devdocs-remove)
-         ("C-c d d" . devdocs-lookup)))
 
 (use-package org
   :bind (("C-c c" . 'org-capture)
          ("C-c l" . 'org-store-link)
          ("C-c a" . 'org-agenda))
+  :hook ((org-mode . visual-line-mode)
+         (org-mode . visual-fill-column-mode)
+         (org-mode . turn-off-auto-fill))
   :config
   ;; need to configure this at some point, useful for creating structure templates.
   (require 'org-tempo)
@@ -225,18 +215,29 @@
   (setopt org-log-done t)
   (setopt org-default-notes-file "~/org/notes.org")
   (setopt org-archive-location "~/org/archives/%s::")
-  (setopt org-todo-keywords '((sequence "ONGO(o)"
-                                        "NEXT(n)"
-                                        "TODO(t)"
-                                        "WAIT(w)"
-                                        "|"
-                                        "DONE(d)"
-                                        "SKIP(s)")))
+  (setopt org-todo-keywords '((sequence "ONGO(o)" "NEXT(n)" "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SKIP(s)")))
   (setopt org-todo-keyword-faces
-	'(("ONGO" . (:inverse-video t))
-	  ("NEXT" . (:weight bold :background "#eeeeee"))
-	  ("WAIT" . (:box t))
-	  ("SKIP" . (:strike-through t)))))
+    '(("ONGO" . (:inverse-video t))
+      ("NEXT" . (:weight bold :background "#eeeeee"))
+      ("WAIT" . (:box t))
+      ("SKIP" . (:strike-through t)))))
+
+;; Ensure the directory exists
+(make-directory "~/org/journal" t)
+
+(with-eval-after-load 'org
+  (defun my/org-monthly-journal-file ()
+    (expand-file-name (format-time-string "%Y-%m.org") "~/org/journal/"))
+
+  (setq org-capture-templates
+        '(("J" "Journal (monthly files + datetree)" entry
+                   (file+olp+datetree my/org-monthly-journal-file)
+                   "* %U %?\n"))))
+
+(use-package visual-fill-column
+  :defer t
+  :custom
+  (visual-fill-column-width 88))
 
 (use-package org-bullets
   :after org
@@ -246,70 +247,79 @@
 
 (setq org-log-done t)
 
+(use-package project
+  :ensure nil
+  :bind ("C-c p" . project-prefix-map))
+
 ;; Show line and column on the modeline.
 (setopt line-number-mode t)
 (setopt column-number-mode t)
 
 ;;; GENERAL PROGRAMMING CONFIG used in every language.
 
+(setq treesit-language-source-alist
+      '((clojure "https://github.com/sogaiu/tree-sitter-clojure")
+        (edn     "https://github.com/tonsky/tree-sitter-edn")))
+
 ;; Rainbow delimeters
 (use-package rainbow-delimiters
-  :hook ((clojure-mode python-ts-mode) . rainbow-delimiters-mode))
+  :hook ((clojure-ts-mode python-ts-mode) . rainbow-delimiters-mode))
 
-;; Project.el for project management
-(use-package project
-  :ensure nil
-  :bind ("C-c p" . project-prefix-map))
-
-;; Load smartparens and its default config
-(use-package smartparens
+;; Paredit initialization
+(use-package paredit
   :config
-  (require 'smartparens-config)
-  (smartparens-global-mode 1)
+  (define-key paredit-mode-map (kbd "C-M-w") 'sp-copy-sexp))
 
-  ;; Strict mode for Lisps only
-  (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojurescript-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojurec-mode-hook #'smartparens-strict-mode)
-
-  (bind-keys
-   :map smartparens-mode-map
-   ("C-(" . sp-backward-slurp-sexp)
-   ("C-)" . sp-forward-slurp-sexp)
-   ("M-(" . sp-backward-barf-sexp)
-   ("M-)" . sp-forward-barf-sexp)
-   ("M-k" . sp-kill-sexp)
-   ("C-M-t" . sp-transpose-sexp)
-   ("M-s" . sp-splice-sexp)
-   ("M-r" . sp-raise-sexp)
-   ("M-DEL" . sp-unwrap-sexp)))
-
-(global-set-key (kbd "C-c M-c") 'comment-region)
-(global-set-key (kbd "C-c M-u") 'uncomment-region)
-
-;; CLOJURE CONFIG
-(use-package clojure-mode
-  :mode ("\\.clj\\'" "\\.cljs\\'" "\\.cljc\\'" "\\.edn\\'")
+(use-package slime
   :config
-  (setopt clojure-align-forms-automatically t))
- 
+  (setopt inferior-lisp-program "sbcl"))
+
+;; Clojure initialization
+(setopt inf-clojure-generic-cmd "clojure")
+
+;; Use LSP
+(use-package lsp-mode
+  :commands lsp
+  :hook ((clojure-ts-mode . lsp)
+         (emacs-lisp-mode . lsp))
+  :config
+  (setopt lsp-warn-no-matched-clients nil)
+  (setopt lsp-prefer-flymake nil)
+  (setq lsp-completion-provider :capf))
+
+(use-package clojure-ts-mode
+  :config
+  (require 'flycheck-clj-kondo)
+  (setopt clojure-align-forms-automatically t)
+  (add-hook 'clojure-ts-mode-hook 'origami-mode)
+  (add-hook 'clojure-ts-mode-hook 'paredit-mode)
+  ;; (add-hook 'clojure-mode-hook 'clj-refactor-mode)
+  (add-hook 'clojure-ts-mode-hook 'aggressive-indent-mode))
+
+;; (use-package clj-refactor
+;;   :config
+;;   ;; (setopt clojure-thread-all-but-last t)
+;;   (define-key clj-refactor-map "\C-ctf" #'clojure-thread-first-all)
+;;   (define-key clj-refactor-map "\C-ctl" #'clojure-thread-last-all)
+;;   (define-key clj-refactor-map "\C-cu" #'clojure-unwind)
+;;   (define-key clj-refactor-map "\C-cU" #'clojure-unwind-all))
+
 (use-package cider
-  :hook (clojure-mode . cider-mode)
   :config
-  (setq cider-repl-pop-to-buffer-on-connect 'display-only))
+  (add-hook 'cider-repl-mode-hook 'company-mode)
+  (setopt cider-use-fringe-indicators nil)
+  (setopt cider-repl-pop-to-buffer-on-connect nil)
+  (setopt nrepl-hide-special-buffers t))
 
-(use-package eglot
-  
-  :hook ((clojure-mode . eglot-ensure)
-         (clojurescript-mode . eglot-ensure)
-         (clojurec-mode . eglot-ensure)
-         (python-ts-mode . eglot-ensure))
-  :config
-  (add-to-list 'eglot-server-programs
-               '(clojure-mode . ("clojure-lsp"))))
+;; Emacs Lisp initialization
+(add-hook 'emacs-lisp-mode-hook 'electric-indent-mode 'append)
+(add-hook 'emacs-lisp-mode-hook 'paredit-mode)
+(add-hook 'emacs-lisp-mode-hook 'origami-mode)
 
 ;; PYTHON CONFIG
+
+(use-package eglot
+  :hook ((python-ts-mode . eglot-ensure)))
 
 (when (and (fboundp 'treesit-available-p)
            (treesit-available-p)
