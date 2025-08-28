@@ -27,13 +27,13 @@
   :config
   (exec-path-from-shell-initialize))
 
-(delete-selection-mode t)
-
-(global-set-key (kbd "C-x m") 'eshell)
-
 (use-package zenburn-theme
   :config
   (load-theme 'zenburn t))
+ 
+(delete-selection-mode t)
+
+(global-set-key (kbd "C-x m") 'eshell)
 
 (use-package doom-modeline
   :ensure t
@@ -123,11 +123,13 @@
   ;; Optional: set a few convenient keybindings up front
   :bind (("C-s" . consult-line)                ;; better search
          ("M-y" . consult-yank-pop)            ;; browse kill-ring
-         ("C-x b" . consult-buffer)            ;; better buffer switch
-         ("C-x p f" . consult-project-file))   ;; project files
+         ("C-x b" . consult-buffer))
   :init
   ;; make sure project.el knows how to find files before consult hooks in
   (setq consult-project-function #'consult--default-project-function))
+
+(use-package consult-project-extra)
+(define-key project-prefix-map (kbd "f") #'consult-project-extra-find)
 
 (use-package embark
   :bind (("C-." . embark-act)         ;; main action menu
@@ -170,25 +172,10 @@
   :config
   (setq dired-subtree-use-backgrounds nil))
 
-(use-package nerd-icons
-  :ensure t)
+(use-package all-the-icons)
 
-(use-package nerd-icons-completion
-  :ensure t
-  :after marginalia
-  :config
-  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
-
-(use-package nerd-icons-corfu
-  :ensure t
-  :after corfu
-  :config
-  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
-
-(use-package nerd-icons-dired
-  :ensure t
-  :hook
-  (dired-mode . nerd-icons-dired-mode))
+(use-package all-the-icons-dired
+  :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package emacs
   :custom
@@ -269,10 +256,6 @@
 (use-package paredit
   :config
   (define-key paredit-mode-map (kbd "C-M-w") 'sp-copy-sexp))
-
-(use-package slime
-  :config
-  (setopt inferior-lisp-program "sbcl"))
 
 ;; Clojure initialization
 (setopt inf-clojure-generic-cmd "clojure")
