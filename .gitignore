@@ -1,0 +1,47 @@
+# macOS
+.DS_Store
+
+# Emacs state/cache
+auto-save-list/
+backups/
+eln-cache/
+eshell/
+tramp/
+transient/
+places
+history
+bookmarks
+recentf
+savehist
+url/
+network-security.data
+projects/
+projectile-bookmarks.eld
+forge-database.sqlite
+.cache/
+gnupg/
+
+# Packages and compiled artifacts
+elpa/
+*.elc
+
+# Tree-sitter binaries
+tree-sitter/
+*.dylib
+*.so
+*.dll
+
+# projects
+projects
+
+# tramp
+tramp
+
+# session????
+session*
+
+# Lock/backup files
+*~
+\#*\#
+.\#*
+
