@@ -176,7 +176,7 @@
         modus-themes-bold-constructs nil)
 
   ;; Load the theme of your choice.
-  (modus-themes-load-theme 'modus-vivendi)
+  (modus-themes-load-theme 'modus-operandi-tinted)
 
   (define-key global-map (kbd "<f5>") #'modus-themes-toggle))
 
