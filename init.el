@@ -18,6 +18,7 @@
 
 (setenv "PYTHON_BASIC_REPL" "1")
 (add-to-list 'process-environment "PYTHON_BASIC_REPL=1")
+(add-to-list 'exec-path "/home/linuxbrew/.linuxbrew/bin")
 
 ;; early in init.el
 (use-package emacs
@@ -36,7 +37,8 @@
         (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "typescript/src")
         (tsx        "https://github.com/tree-sitter/tree-sitter-typescript" "tsx/src")
         (json    "https://github.com/tree-sitter/tree-sitter-json")
-        (yaml    "https://github.com/ikatyang/tree-sitter-yaml"))))
+        (yaml    "https://github.com/ikatyang/tree-sitter-yaml")
+	(cpp "https://github.com/tree-sitter/tree-sitter-cpp"))))
 
 (setopt sentence-end-double-space nil)
 
@@ -78,10 +80,15 @@
 (tooltip-mode -1)
 (blink-cursor-mode -1)
 (pixel-scroll-mode 1)
-(global-display-line-numbers-mode 1)
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (tool-bar-mode -1)
 
 (delete-selection-mode 1)
+
+;; better scrolling
+(use-package good-scroll
+  :config
+  (good-scroll-mode 1))
 
 ;; Default Frame
 (setopt default-frame-alist
@@ -176,7 +183,7 @@
         modus-themes-bold-constructs nil)
 
   ;; Load the theme of your choice.
-  (modus-themes-load-theme 'modus-vivendi)
+  (modus-themes-load-theme 'modus-vivendi-tinted)
 
   (define-key global-map (kbd "<f5>") #'modus-themes-toggle))
 
@@ -299,7 +306,8 @@
         sp-autodelete-wrap t
         sp-autoskip-closing-pair 'always
         sp-cancel-autoskip-on-backward-movement nil
-        sp-navigate-consider-symbols t))
+        sp-navigate-consider-symbols t)
+  (sp-pair "'" nil :actions nil))
 
 (use-package project
   :ensure nil
@@ -314,7 +322,15 @@
   (define-key flymake-mode-map (kbd "M-P") 'flymake-show-project-diagnostics))
 
 (add-to-list 'major-mode-remap-alist '((python-mode . python-ts-mode)
-				       (clojure-mode . clojure-ts-mode)))
+				       (clojure-mode . clojure-ts-mode)
+				       (c++-mode . c++-ts-mode)))
+
+(add-to-list 'auto-mode-alist '("\\.h$ . c++-mode"))
+(setq c-default-style "stroustrup"
+      c-basic-indent 4
+      c-basic-offset 4)
+(c-set-offset 'innamespace 0)
+
 (use-package python
   :ensure nil
   :mode ("\\.py\\'" . python-ts-mode)
@@ -323,6 +339,11 @@
   :config
   (defun my/python-format-on-save ()
     (add-hook 'before-save-hook #'python-black-buffer nil t)))
+
+(use-package python-black
+  :demand t
+  :after python
+  :hook (python-ts-mode . python-black-on-save-mode-enable-dwim))
 
 (use-package pyvenv
   :hook (python-ts-mode . my/pyvenv-auto-activate)
@@ -349,7 +370,9 @@
            ("C-c c r" . eglot-rename)
            ("C-c c f" . eglot-format))
   :hook ((clojure-ts-mode . eglot-ensure)
-	 (python-ts-mode . eglot-ensure)))
+	 (python-ts-mode . eglot-ensure)
+	 (c++-ts-mode . eglot-ensure)
+	 (c-mode . eglot-ensure)))
 
 (use-package clojure-ts-mode
   :mode (("\\.clj\\'"  . clojure-ts-mode)
@@ -365,11 +388,6 @@
 
 (setq eldoc-documentation-strategy 'eldoc-documentation-compose)
 (setq cider-eldoc-display-context-dependent-info nil)
-
-(with-eval-after-load 'eglot
-  (add-to-list 'eglot-server-programs
-               '((clojure-ts-mode . ("clojure-lsp"))
-		 (python-ts-mode . ("pylsp")))))
 
 (defun my/clj-format-on-save ()
   (when (eglot-managed-p) (eglot-format-buffer)))
@@ -410,3 +428,26 @@
 
 (use-package magit
   :bind (("C-x g" . magit-status)))
+
+;; better terminal (vterm) setup
+(use-package vterm
+  :hook (vterm-mode . (lambda () (display-line-numbers-mode -1))))
+
+(defun vterm-new-window ()
+  (interactive)
+  (split-window-below)
+  (other-window 1)
+  (let ((vterm-buffer-name-string "%s"))
+    (vterm)))
+
+(global-set-key (kbd "C-c t w") 'vterm-new-window)
+
+(use-package treemacs
+  :bind
+  (("C-x t t" . treemacs)
+   ("C-x t a" . treemacs-select-window)))
+
+(use-package treemacs-icons-dired
+  :hook (dired-mode . treemacs-icons-dired-enable-once))
+
+
