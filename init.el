@@ -19,6 +19,7 @@
 (setenv "PYTHON_BASIC_REPL" "1")
 (add-to-list 'process-environment "PYTHON_BASIC_REPL=1")
 (add-to-list 'exec-path "/home/linuxbrew/.linuxbrew/bin")
+(add-to-list 'exec-path "/usr/local/texlive/2025/bin/")
 
 ;; early in init.el
 (use-package emacs
@@ -39,6 +40,12 @@
         (json    "https://github.com/tree-sitter/tree-sitter-json")
         (yaml    "https://github.com/ikatyang/tree-sitter-yaml")
 	(cpp "https://github.com/tree-sitter/tree-sitter-cpp"))))
+
+(add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
+(add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode))
+(add-to-list 'major-mode-remap-alist '(css-mode . css-ts-mode))
+(add-to-list 'major-mode-remap-alist '(html-mode . html-ts-mode))
+
 
 (setopt sentence-end-double-space nil)
 
@@ -183,7 +190,7 @@
         modus-themes-bold-constructs nil)
 
   ;; Load the theme of your choice.
-  (modus-themes-load-theme 'modus-vivendi-tinted)
+  (modus-themes-load-theme 'modus-operandi-tinted)
 
   (define-key global-map (kbd "<f5>") #'modus-themes-toggle))
 
@@ -372,7 +379,24 @@
   :hook ((clojure-ts-mode . eglot-ensure)
 	 (python-ts-mode . eglot-ensure)
 	 (c++-ts-mode . eglot-ensure)
-	 (c-mode . eglot-ensure)))
+	 (c-mode . eglot-ensure)
+	 (typescript-ts-mode . eglot-ensure)
+         (tsx-ts-mode        . eglot-ensure)
+         (css-ts-mode        . eglot-ensure)
+         (html-ts-mode       . eglot-ensure))
+  :config
+  (add-to-list 'eglot-server-programs
+               '((typescript-ts-mode tsx-ts-mode)
+                 . ("typescript-language-server" "--stdio")))
+  (add-to-list 'eglot-server-programs
+               '((html-ts-mode) . ("vscode-html-language-server" "--stdio")))
+  (add-to-list 'eglot-server-programs
+               '((css-ts-mode)  . ("vscode-css-language-server" "--stdio"))))
+
+(use-package apheleia
+  :config
+  (apheleia-global-mode 1))
+
 
 (use-package clojure-ts-mode
   :mode (("\\.clj\\'"  . clojure-ts-mode)
@@ -406,7 +430,7 @@
   (setq cider-repl-display-help-banner nil
         cider-repl-use-clojure-font-lock t
         cider-save-file-on-load t
-        cider-use-completion-at-point nil
+        cider-use-completion-at-point t
         cider-repl-pop-to-buffer-on-connect 'display-only
         cider-clojure-cli-aliases ":dev"
         cider-repl-display-result t)
