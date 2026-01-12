@@ -24,6 +24,9 @@
 ;; early in init.el
 (use-package emacs
   :ensure nil
+  :config
+  (add-hook 'prog-mode-hook #'flymake-mode)
+  (add-hook 'prog-mode-hook #'display-line-numbers-mode)
   :custom
   ;; not sure if i want this yet
   (tab-always-indent t)
@@ -31,21 +34,31 @@
   (enable-recursive-minibuffers t)
   (read-extended-command-predicate #'command-completion-default-include-p)
   (minibuffer-prompt-properties
-   '(read-only t cursor-intangible t face minibuffer-prompt))
-  (treesit-language-source-alist
-   '((clojure "https://github.com/sogaiu/tree-sitter-clojure")
-     (python "https://github.com/tree-sitter/py-tree-sitter")
-        (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "typescript/src")
-        (tsx        "https://github.com/tree-sitter/tree-sitter-typescript" "tsx/src")
-        (json    "https://github.com/tree-sitter/tree-sitter-json")
-        (yaml    "https://github.com/ikatyang/tree-sitter-yaml")
-	(cpp "https://github.com/tree-sitter/tree-sitter-cpp"))))
+   '(read-only t cursor-intangible t face minibuffer-prompt)))
 
-(add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
-(add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode))
-(add-to-list 'major-mode-remap-alist '(css-mode . css-ts-mode))
-(add-to-list 'major-mode-remap-alist '(html-mode . html-ts-mode))
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install 't) ;; Auto install without asking
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
 
+(setq major-mode-remap-alist
+      '((python-mode     . python-ts-mode)
+        (clojure-mode    . clojure-ts-mode)
+        (typescript-mode . typescript-ts-mode)
+        (tsx-mode        . tsx-ts-mode)
+        (c++-mode        . c++-ts-mode)
+        (csharp-mode     . csharp-ts-mode)
+        (css-mode        . css-ts-mode)
+        (html-mode       . html-ts-mode)))
+
+(setq auto-mode-alist
+      (append '(("\\.ts\\'"  . typescript-ts-mode)
+                ("\\.tsx\\'" . tsx-ts-mode)
+                ("\\.h\\'"   . c++-ts-mode)
+                ("\\.py\\'"  . python-ts-mode))
+              auto-mode-alist))
 
 (setopt sentence-end-double-space nil)
 
@@ -53,6 +66,8 @@
 
 ;; Misc minimizing emacs
 (global-unset-key (kbd "C-z"))
+
+(setq make-backup-files nil)
 
 ;; Who I am
 (setopt user-full-name "Arthur Mosley")
@@ -68,6 +83,8 @@
 (setopt auto-save-default nil)
 (setopt make-backup-files nil)
 
+(set-frame-font "Menlo 15" nil t)
+
 ;; Well, it's more so that you know this option
 (setopt kill-whole-line t)
 (setopt kill-read-only-ok t)
@@ -77,6 +94,7 @@
 (setopt scroll-error-top-bottom t)
 (setopt focus-follows-mouse t)
 (setopt recenter-positions '(top bottom middle))
+(scroll-bar-mode -1)
 
 ;; Always use "y" for "yes"
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -87,7 +105,6 @@
 (tooltip-mode -1)
 (blink-cursor-mode -1)
 (pixel-scroll-mode 1)
-(add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (tool-bar-mode -1)
 
 (delete-selection-mode 1)
@@ -182,21 +199,26 @@
   :config
   (winner-mode 1))
 
-(use-package modus-themes
-  :ensure t
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
+
+(use-package zenburn-theme
   :config
-  ;; Add all your customizations prior to loading the themes
-  (setq modus-themes-italic-constructs t
-        modus-themes-bold-constructs nil)
-
-  ;; Load the theme of your choice.
-  (modus-themes-load-theme 'modus-operandi-tinted)
-
-  (define-key global-map (kbd "<f5>") #'modus-themes-toggle))
+  (load-theme 'zenburn t))
 
 ;; Show line and column on the modeline.
 (setopt line-number-mode t)
 (setopt column-number-mode t)
+
+(use-package all-the-icons :ensure t)
+
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :custom
+  (doom-modeline-height 25)     ; Sets the bar height
+  (doom-modeline-bar-width 4)   ; Sets the vertical bar thickness
+  (doom-modeline-env-version t) ; Shows Python/Clojure versions
+  (doom-modeline-lsp t))        ; Shows Eglot status
 
 ;; ----------------------- Completion  Packages  ----------------------- ;;
 ;; come back to this for better completion.
@@ -216,7 +238,9 @@
   ;; Optional: set a few convenient keybindings up front
   :bind (("C-s" . consult-line)                ;; better search
          ("M-y" . consult-yank-pop)            ;; browse kill-ring
-         ("C-x b" . consult-buffer)))
+         ("C-x b" . consult-buffer)
+	 :map project-prefix-map
+	 ("s" . consult-ripgrep)))
 
 (use-package embark
   :bind (("C-." . embark-act)         ;; main action menu
@@ -276,39 +300,51 @@
 ;; PROGRAMMING SETUP ;;
 (use-package dash)
 
+;; python environment stuff
+(use-package envrc
+  :ensure t
+  :hook (after-init . envrc-global-mode))
+
+(use-package apheleia
+  :ensure t
+  :config
+  (apheleia-global-mode +1))
+
+(keymap-global-set "C-c C" #'compile)
+
 (use-package smartparens
   :init (require 'smartparens-config)
-  :hook ((clojure-ts-mode . smartparens-strict-mode)
+  :hook ((prog-mode . smartparens-mode)
+	 (prog-mode . show-smartparens-mode)
+	 (clojure-ts-mode . smartparens-strict-mode)
 	 (cider-repl-mode . smartparens-strict-mode)
-	 (emacs-lisp-mode . smartparens-strict-mode)
-         (text-mode . smartparens-mode)
-         (markdown-mode . smartparens-mode)
-	 (python-mode . smartparens-mode))
+	 (emacs-lisp-mode . smartparens-strict-mode))
+  :bind (:map smartparens-mode-map
+              ;; Movement
+              ("C-M-f" . sp-forward-sexp)
+              ("C-M-b" . sp-backward-sexp)
+              ("C-M-d" . sp-down-sexp)
+              ("C-M-a" . sp-backward-down-sexp)
+              ("C-S-d" . sp-beginning-of-sexp)
+              ("C-S-a" . sp-end-of-sexp)
+              ("M-F"   . sp-forward-symbol)
+              ("M-B"   . sp-backward-symbol)
+              ;; Slurp/Barf
+              ("C-)"   . sp-forward-slurp-sexp)
+              ("C-}"   . sp-forward-barf-sexp)
+              ("C-("   . sp-backward-slurp-sexp)
+              ("C-{"   . sp-backward-barf-sexp)
+              ;; Wrap
+              ("M-("   . sp-wrap-round)
+              ("M-["   . sp-wrap-square)
+              ("M-{"   . sp-wrap-curly)
+              ;; Kill/Copy
+              ("C-M-k" . sp-kill-sexp)
+              ("C-M-w" . sp-copy-sexp)
+              ("C-k"   . sp-kill-hybrid-sexp))
   :config
   (with-eval-after-load 'smartparens
-  (sp-local-pair 'clojure-mode "(" ")" :when '(sp-in-code-p)))
-  ;; Movement
-  (define-key smartparens-mode-map (kbd "C-M-f") #'sp-forward-sexp)
-  (define-key smartparens-mode-map (kbd "C-M-b") #'sp-backward-sexp)
-  (define-key smartparens-mode-map (kbd "C-M-d") #'sp-down-sexp)
-  (define-key smartparens-mode-map (kbd "C-M-a") #'sp-backward-down-sexp)
-  (define-key smartparens-mode-map (kbd "C-S-d") #'sp-beginning-of-sexp)
-  (define-key smartparens-mode-map (kbd "C-S-a") #'sp-end-of-sexp)
-  (define-key smartparens-mode-map (kbd "M-F") #'sp-forward-symbol)
-  (define-key smartparens-mode-map (kbd "M-B") #'sp-backward-symbol)
-  ;; Slurp/barf
-  (define-key smartparens-mode-map (kbd "C-)") #'sp-forward-slurp-sexp)
-  (define-key smartparens-mode-map (kbd "C-}") #'sp-forward-barf-sexp)
-  (define-key smartparens-mode-map (kbd "C-(") #'sp-backward-slurp-sexp)
-  (define-key smartparens-mode-map (kbd "C-{") #'sp-backward-barf-sexp)
-  ;; Wrap
-  (define-key smartparens-mode-map (kbd "M-(") #'sp-wrap-round)
-  (define-key smartparens-mode-map (kbd "M-[") #'sp-wrap-square)
-  (define-key smartparens-mode-map (kbd "M-{") #'sp-wrap-curly)
-  ;; Kill
-  (define-key smartparens-mode-map (kbd "C-M-k") #'sp-kill-sexp)
-  (define-key smartparens-mode-map (kbd "C-M-w") #'sp-copy-sexp)
-  (define-key smartparens-mode-map (kbd "C-k")   #'sp-kill-hybrid-sexp)
+    (sp-local-pair 'clojure-mode "(" ")" :when '(sp-in-code-p)))
   (setq sp-autodelete-pair t
         sp-autodelete-wrap t
         sp-autoskip-closing-pair 'always
@@ -328,11 +364,6 @@
   (define-key flymake-mode-map (kbd "M-d") 'flymake-show-buffer-diagnostics)
   (define-key flymake-mode-map (kbd "M-P") 'flymake-show-project-diagnostics))
 
-(add-to-list 'major-mode-remap-alist '((python-mode . python-ts-mode)
-				       (clojure-mode . clojure-ts-mode)
-				       (c++-mode . c++-ts-mode)))
-
-(add-to-list 'auto-mode-alist '("\\.h$ . c++-mode"))
 (setq c-default-style "stroustrup"
       c-basic-indent 4
       c-basic-offset 4)
@@ -341,11 +372,10 @@
 (use-package python
   :ensure nil
   :mode ("\\.py\\'" . python-ts-mode)
-  :hook ((python-ts-mode . eglot-ensure)
-	 (python-ts-mode . my/python-format-on-save))
-  :config
-  (defun my/python-format-on-save ()
-    (add-hook 'before-save-hook #'python-black-buffer nil t)))
+  :hook
+  ;; Remove the legacy backend. Eglot will handle the linting.
+  (python-ts-mode . (lambda ()
+                      (remove-hook 'flymake-diagnostic-functions 'python-flymake t))))
 
 (use-package python-black
   :demand t
@@ -353,6 +383,7 @@
   :hook (python-ts-mode . python-black-on-save-mode-enable-dwim))
 
 (use-package pyvenv
+  :ensure t
   :hook (python-ts-mode . my/pyvenv-auto-activate)
   :config
   (require 'seq)
@@ -361,49 +392,53 @@
     (when-let* ((root (ignore-errors (project-root (project-current))))
                 (cand (mapcar (lambda (d) (expand-file-name d root)) '(".venv" "venv")))
                 (venv (seq-find #'file-directory-p cand)))
-      (pyvenv-activate venv))))
+      (pyvenv-activate venv)))) ;; Fixed: was 'v', changed to 'venv'
+
+(use-package haskell-mode
+  :ensure t
+  :mode "\\.hs\\'"
+  :config
+  (add-hook 'haskell-mode-hook 
+            (lambda () (add-hook 'before-save-hook #'eglot-format-buffer nil t))))
 
 (use-package eglot
   :ensure nil
   :defer t
   :bind (("M-TAB" . completion-at-point)
-           ("M-g i" . imenu)
-           ("C-h ." . display-local-help)
-           ("M-." . xref-find-definitions)
-           ("M-," . xref-go-back)
-           :map eglot-mode-map
-           ("C-c c a" . eglot-code-actions)
-           ("C-c c o" . eglot-code-actions-organize-imports)
-           ("C-c c r" . eglot-rename)
-           ("C-c c f" . eglot-format))
-  :hook ((clojure-ts-mode . eglot-ensure)
-	 (python-ts-mode . eglot-ensure)
-	 (c++-ts-mode . eglot-ensure)
-	 (c-mode . eglot-ensure)
-	 (typescript-ts-mode . eglot-ensure)
-         (tsx-ts-mode        . eglot-ensure)
-         (css-ts-mode        . eglot-ensure)
-         (html-ts-mode       . eglot-ensure))
+         ("M-g i" . imenu)
+         ("C-h ." . display-local-help)
+         ("M-."   . xref-find-definitions)
+         ("M-,"   . xref-go-back)
+         :map eglot-mode-map
+         ("C-c c a" . eglot-code-actions)
+         ("C-c c o" . eglot-code-actions-organize-imports)
+         ("C-c c r" . eglot-rename)
+         ("C-c c f" . eglot-format))
+  ;; Consolidation of all your programming hooks
+  :hook (((clojure-ts-mode python-ts-mode c++-ts-mode c-mode 
+			   typescript-ts-mode tsx-ts-mode css-mode html-mode haskell-mode) . eglot-ensure))
   :config
-  (add-to-list 'eglot-server-programs
-               '((typescript-ts-mode tsx-ts-mode)
-                 . ("typescript-language-server" "--stdio")))
-  (add-to-list 'eglot-server-programs
-               '((html-ts-mode) . ("vscode-html-language-server" "--stdio")))
-  (add-to-list 'eglot-server-programs
-               '((css-ts-mode)  . ("vscode-css-language-server" "--stdio"))))
-
-(use-package apheleia
-  :config
-  (apheleia-global-mode 1))
-
+  ;; Refined server list
+  (setq eglot-server-programs
+        (append '(((typescript-ts-mode tsx-ts-mode) . ("typescript-language-server" "--stdio"))
+                  (html-ts-mode . ("vscode-html-language-server" "--stdio"))
+                  (css-ts-mode  . ("vscode-css-language-server" "--stdio"))
+                  (haskell-mode . ("haskell-language-server-wrapper" "--stdio"))
+                  (python-ts-mode . ("basedpyright-langserver" "--stdio" "pyright-langserver" "pylsp"))
+                  ((clojure-mode clojure-ts-mode clojurescript-mode clojurec-mode) . ("clojure-lsp")))
+                eglot-server-programs))
+  :custom
+  (eglot-autoshutdown t)
+  (eglot-confirm-server-initiated-edits nil)
+  ;; Performance: Silence heavy logging to prevent UI lag
+  (eglot-events-buffer-config '(:size 0 :format full))
+  (eglot-sync-connect nil))
 
 (use-package clojure-ts-mode
   :mode (("\\.clj\\'"  . clojure-ts-mode)
          ("\\.cljs\\'" . clojure-ts-mode)
          ("\\.cljc\\'" . clojure-ts-mode))
-  :hook ((clojure-ts-mode . smartparens-strict-mode)
-         (clojure-ts-mode . cider-mode)
+  :hook ((clojure-ts-mode . cider-mode)
          (clojure-ts-mode . eldoc-mode)
          (clojure-ts-mode . my/clojure-local-setup))
   :init
@@ -413,16 +448,10 @@
 (setq eldoc-documentation-strategy 'eldoc-documentation-compose)
 (setq cider-eldoc-display-context-dependent-info nil)
 
-(defun my/clj-format-on-save ()
-  (when (eglot-managed-p) (eglot-format-buffer)))
-
-(add-hook 'clojure-ts-mode-hook
-          (lambda () (add-hook 'before-save-hook #'my/clj-format-on-save nil t)))
-
 (defun cider-integrant-reset ()
-    "Run integrant.repl/reset in the current REPL."
-    (interactive)
-    (cider-interactive-eval "(integrant.repl/reset)"))
+  "Run integrant.repl/reset in the current REPL."
+  (interactive)
+  (cider-interactive-eval "(integrant.repl/reset)"))
 
 (use-package cider
   :after clojure-ts-mode
@@ -433,10 +462,11 @@
         cider-use-completion-at-point t
         cider-repl-pop-to-buffer-on-connect 'display-only
         cider-clojure-cli-aliases ":dev"
-        cider-repl-display-result t)
+        cider-repl-display-result t
+	cider-eldoc-display-for-symbol-at-point nil
+	cider-eldoc-display-context-dependent-info nil)
   :hook ((cider-repl-mode . eldoc-mode))
   :config
-  
   (with-eval-after-load 'clojure-ts-mode
     (define-key clojure-ts-mode-map (kbd "C-c r") #'cider-integrant-reset)))
 
@@ -467,11 +497,10 @@
 (global-set-key (kbd "C-c t w") 'vterm-new-window)
 
 (use-package treemacs
+  :config
   :bind
   (("C-x t t" . treemacs)
    ("C-x t a" . treemacs-select-window)))
 
 (use-package treemacs-icons-dired
   :hook (dired-mode . treemacs-icons-dired-enable-once))
-
-
