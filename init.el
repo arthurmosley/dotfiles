@@ -6,25 +6,30 @@
 ;; Initialize package
 (setopt package-native-compile t)
 (setopt package-archives
-    '(("gnu" . "http://elpa.gnu.org/packages/")
+    '(("gnu" . "https://elpa.gnu.org/packages/")
       ("gnu-devel" . "https://elpa.gnu.org/devel/")
-      ("nongnu" . "http://elpa.nongnu.org/nongnu/")
-      ("melpa" . "http://melpa.org/packages/")))
+      ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+      ("melpa" . "https://melpa.org/packages/")))
 
 (use-package exec-path-from-shell
   :init
-  (when (memq window-system '(x pgtk))
+  (when (memq window-system '(x pgtk ns))
     (exec-path-from-shell-initialize)))
 
-(add-to-list 'exec-path "/home/linuxbrew/.linuxbrew/bin")
-(add-to-list 'exec-path "/usr/local/texlive/2025/bin/")
-(add-to-list 'exec-path "/home/arthurmosley/.bun/bin")
+(when (eq system-type 'gnu/linux)
+  (add-to-list 'exec-path "/home/linuxbrew/.linuxbrew/bin")
+  (add-to-list 'exec-path (car (file-expand-wildcards "/usr/local/texlive/*/bin/x86_64-linux")))
+  (add-to-list 'exec-path (expand-file-name "~/.bun/bin")))
 
-(setq use-package-always-ensure t)
+(setopt use-package-always-ensure t)
 
-;; Disable all themes before loading a new one
-(mapc #'disable-theme custom-enabled-themes)
-(load-theme 'doom-one)
+(use-package doom-themes
+  :config
+  (mapc #'disable-theme custom-enabled-themes)
+  (load-theme 'doom-one t)
+  ;; Remove box styling so moody's slanted tabs render correctly
+  (set-face-attribute 'mode-line-active nil :box 'unspecified)
+  (set-face-attribute 'mode-line-inactive nil :box 'unspecified))
 
 ;; early in init.el
 (use-package emacs
@@ -36,15 +41,18 @@
   (add-hook 'prog-mode-hook #'display-line-numbers-mode)
   (define-key global-map (kbd "<f5>") #'modus-themes-toggle)
   :custom
-  (tab-always-indent t)
+  (tab-always-indent 'complete)
+  (text-mode-ispell-word-completion nil)
   (context-menu-mode t)
   (enable-recursive-minibuffers t)
   (read-extended-command-predicate #'command-completion-default-include-p)
   (minibuffer-prompt-properties
    '(read-only t cursor-intangible t face minibuffer-prompt)))
 
+(setopt create-lockfiles nil)
+
 (set-face-attribute 'default nil
-                    :font "Monaspace Neon"   ; paid, beautiful
+                    :font "JetBrains Mono"   ; free, clean
                     ;; alternatives:
                     ;; "Iosevka"            ; free, very customizable
                     ;; "Monaspace Neon"     ; free, Microsoft, ligature support
@@ -62,7 +70,7 @@
 ;; ----------------------- TREESITTER SETUP ----------------------- ;;
 (use-package treesit-auto
   :custom
-  (treesit-auto-install 't)
+  (treesit-auto-install t)
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
@@ -84,23 +92,15 @@
         (css-mode        . css-ts-mode)
         (html-mode       . html-ts-mode)))
 
-(setq auto-mode-alist
-      (append '(("\\.ts\\'"  . typescript-ts-mode)
-                ("\\.tsx\\'" . tsx-ts-mode)
-                ("\\.h\\'"   . c++-ts-mode)
-                ("\\.py\\'"  . python-ts-mode))
-              auto-mode-alist))
 
 (setopt sentence-end-double-space nil)
 
 ;; ----------------------- BASIC SETTINGS ----------------------- ;;
 (global-unset-key (kbd "C-z"))
-(setq make-backup-files nil)
-
 (setopt user-full-name "Arthur Mosley")
 (setopt user-mail-address "arthurcharlesmosley@gmail.com")
 
-(setopt debug-on-error t)
+(setopt debug-on-error nil)
 (setopt byte-compile-debug t)
 (setopt auto-save-default nil)
 (setopt make-backup-files nil)
@@ -114,20 +114,19 @@
 (setopt recenter-positions '(top bottom middle))
 (scroll-bar-mode -1)
 
-(fset 'yes-or-no-p 'y-or-n-p)
+(setopt use-short-answers t)
 
 (auto-insert-mode 1)
 (tooltip-mode -1)
 (blink-cursor-mode -1)
-(pixel-scroll-mode 1)
+(pixel-scroll-precision-mode 1)
 (tool-bar-mode -1)
 (delete-selection-mode 1)
 
 (setopt default-frame-alist
     '((menu-bar-lines . 0)
       (tool-bar-lines . 0)
-      (internal-border-width . 16)
-      (undecorated . t)))
+      (internal-border-width . 16)))
 
 (setopt initial-scratch-message "")
 (setopt initial-major-mode 'org-mode)
@@ -139,7 +138,7 @@
 (add-to-list 'tab-bar-format 'tab-bar-format-align-right 'append)
 (add-to-list 'tab-bar-format 'tab-bar-format-global 'append)
 (setopt display-time-format "%a %F %T")
-(setopt display-time-interval 1)
+(setopt display-time-interval 60)
 (display-time-mode)
 
 (save-place-mode 1)
@@ -147,15 +146,15 @@
 ;; ----------------------- IBUFFER ----------------------- ;;
 (use-package ibuffer
   :config
-  (setq ibuffer-expert t)
-  (setq ibuffer-display-summary nil)  ;; Fixed typo here
-  (setq ibuffer-user-other-window nil)
-  (setq ibuffer-show-empty-filter-groups nil)
-  (setq ibuffer-default-sorting-mode 'filename/process)
-  (setq ibuffer-title-face 'font-lock-doc-face)
-  (setq ibuffer-user-header-line t)
-  (setq ibuffer-default-shrink-to-minimum-size nil)
-  (setq ibuffer-formats
+  (setopt ibuffer-expert t)
+  (setopt ibuffer-display-summary nil)
+  (setopt ibuffer-use-other-window nil)
+  (setopt ibuffer-show-empty-filter-groups nil)
+  (setopt ibuffer-default-sorting-mode 'filename/process)
+  (setopt ibuffer-title-face 'font-lock-doc-face)
+  (setopt ibuffer-use-header-line t)
+  (setopt ibuffer-default-shrink-to-minimum-size nil)
+  (setopt ibuffer-formats
         '((mark modified read-only locked " "
                 (name 30 30 :left :elide)
                 " "
@@ -166,7 +165,7 @@
           (mark " "
                 (name 16 -1)
                 " " filename)))
-  (setq ibuffer-saved-filter-groups
+  (setopt ibuffer-saved-filter-groups
     '(("Main"
        ("Directories" (mode . dired-mode))
        ("Clojure" (or
@@ -220,14 +219,14 @@
 (use-package nerd-icons-ibuffer
   :hook (ibuffer-mode . nerd-icons-ibuffer-mode))
 
-(use-package doom-modeline
-  :ensure t
-  :init (doom-modeline-mode 1)
-  :custom
-  (doom-modeline-height 25)
-  (doom-modeline-bar-width 4)
-  (doom-modeline-env-version t)
-  (doom-modeline-lsp t))
+(use-package moody
+  :config
+  (moody-replace-mode-line-front-space)
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode))
+
+(use-package minions
+  :config (minions-mode 1))
 
 ;; ----------------------- COMPLETION PACKAGES ----------------------- ;;
 (use-package vertico
@@ -235,11 +234,14 @@
   (vertico-mode))
 
 (use-package corfu
-  :init
-  (global-corfu-mode)
+  :if (not (eq window-system 'pgtk))
   :custom
   (corfu-auto t)
-  (corfu-quit-no-match 'separator))
+  (corfu-auto-delay 0.2)
+  (corfu-auto-prefix 2)
+  (corfu-cycle t)
+  :init
+  (global-corfu-mode))
 
 (use-package consult
   :bind (("C-s" . consult-line)
@@ -253,7 +255,7 @@
          ("C-;" . embark-dwim)
          ("C-h B" . embark-bindings))
   :init
-  (setq prefix-help-command #'embark-prefix-help-command))
+  (setopt prefix-help-command #'embark-prefix-help-command))
 
 (use-package embark-consult
   :after (embark consult)
@@ -261,8 +263,8 @@
   (embark-collect-mode . consult-preview-at-point-mode))
 
 (with-eval-after-load 'consult
-  (setq xref-show-xrefs-function       #'consult-xref
-        xref-show-definitions-function #'consult-xref))
+  (setopt xref-show-xrefs-function       #'consult-xref
+          xref-show-definitions-function #'consult-xref))
 
 (use-package marginalia
   :init
@@ -282,10 +284,10 @@
   ((dired-mode . dired-hide-details-mode)
    (dired-mode . hl-line-mode))
   :config
-  (setq dired-recursive-copies 'always)
-  (setq dired-recursive-deletes 'always)
-  (setq delete-by-moving-to-trash t)
-  (setq dired-dwim-target t))
+  (setopt dired-recursive-copies 'always)
+  (setopt dired-recursive-deletes 'always)
+  (setopt delete-by-moving-to-trash t)
+  (setopt dired-dwim-target t))
 
 (use-package savehist
   :init
@@ -297,8 +299,8 @@
 
 ;; macOS key mappings
 (when (eq system-type 'darwin)
-  (setq x-meta-keysym 'super
-        x-super-keysym 'meta))
+  (setopt mac-command-modifier 'meta
+          mac-option-modifier 'super))
 
 ;; ----------------------- PROGRAMMING SETUP ----------------------- ;;
 
@@ -319,10 +321,9 @@
   :ensure t
   :hook (prog-mode . hungry-delete-mode)
   :config
-  (setq hungry-delete-chars-to-skip " \t\r\f\v"))
+  (setopt hungry-delete-chars-to-skip " \t\r\f\v"))
 
 (use-package smartparens
-  :init (require 'smartparens-config)
   :hook ((prog-mode . smartparens-mode)
      (clojure-ts-mode . smartparens-strict-mode)
      (cider-repl-mode . smartparens-strict-mode)
@@ -353,13 +354,13 @@
 	      ;; transpose lines
 	      ("M-<up>" . sp-transpose-sexp))
   :config
-  (with-eval-after-load 'smartparens
-    (sp-local-pair 'clojure-mode "(" ")" :when '(sp-in-code-p)))
-  (setq sp-autodelete-pair t
-        sp-autodelete-wrap t
-        sp-autoskip-closing-pair 'always
-        sp-cancel-autoskip-on-backward-movement nil
-        sp-navigate-consider-symbols t)
+  (require 'smartparens-config)
+  (sp-local-pair 'clojure-mode "(" ")" :when '(sp-in-code-p))
+  (setopt sp-autodelete-pair t
+          sp-autodelete-wrap t
+          sp-autoskip-closing-pair 'always
+          sp-cancel-autoskip-on-backward-movement nil
+          sp-navigate-consider-symbols t)
   (sp-local-pair '(clojure-mode clojure-ts-mode) "`" nil :actions nil)
   (sp-pair "'" nil :actions nil))
 
@@ -402,23 +403,12 @@
   :after python
   :hook (python-ts-mode . python-black-on-save-mode-enable-dwim))
 
-(use-package pyvenv
-  :ensure t
-  :hook (python-ts-mode . my/pyvenv-auto-activate)
-  :config
-  (require 'seq)
-  (defun my/pyvenv-auto-activate ()
-    "Activate ./.venv or ./venv if present at project root."
-    (when-let* ((root (ignore-errors (project-root (project-current))))
-                (cand (mapcar (lambda (d) (expand-file-name d root)) '(".venv" "venv")))
-                (venv (seq-find #'file-directory-p cand)))
-      (pyvenv-activate venv))))
 
 ;; ----------------------- EGLOT (LSP) ----------------------- ;;
 (use-package eglot
   :ensure nil
   :defer t
-  :bind (("M-TAB" . completion-at-point)
+  :bind (("<C-tab>" . completion-at-point)
          ("M-g i" . imenu)
          ("C-h ." . display-local-help)
          ("M-."   . xref-find-definitions)
@@ -442,7 +432,7 @@
   :custom
   (eglot-autoshutdown t)
   (eglot-confirm-server-initiated-edits nil)
-  (eglot-events-buffer-config '(:size 0 :format full))
+  (eglot-events-buffer-config '(:size 2000000 :format full))
   (eglot-sync-connect nil))
 
 ;; ----------------------- CLOJURE SETUP ----------------------- ;;
@@ -458,8 +448,8 @@
     (electric-pair-local-mode -1)))
 
 ;; Configure eldoc to show both CIDER and other documentation
-(setq eldoc-documentation-strategy 'eldoc-documentation-compose)
-(setq cider-eldoc-display-context-dependent-info nil)
+(setopt eldoc-documentation-strategy 'eldoc-documentation-compose)
+(setopt cider-eldoc-display-context-dependent-info nil)
 
 (defun cider-integrant-reset ()
   "Run integrant.repl/reset in the current REPL."
@@ -469,15 +459,16 @@
 (use-package cider
   :after clojure-ts-mode
   :init
-  (setq cider-repl-display-help-banner nil
-        cider-repl-use-clojure-font-lock t
-        cider-save-file-on-load t
-        cider-use-completion-at-point t
-        cider-repl-pop-to-buffer-on-connect 'display-only
-        cider-clojure-cli-aliases ":dev"
-        cider-repl-display-result t
-        cider-eldoc-display-for-symbol-at-point nil
-        cider-eldoc-display-context-dependent-info nil)
+  (setopt cider-repl-display-help-banner nil
+          cider-repl-use-clojure-font-lock t
+          cider-save-file-on-load t
+          cider-use-completion-at-point t
+          cider-repl-pop-to-buffer-on-connect 'display-only
+          cider-clojure-cli-aliases ":dev"
+          cider-repl-display-result t
+          cider-eldoc-display-for-symbol-at-point nil
+          cider-eldoc-display-context-dependent-info nil
+          cider-repl-display-in-current-window t)
   :hook ((cider-repl-mode . eldoc-mode))
   :config
   (with-eval-after-load 'clojure-ts-mode
@@ -488,21 +479,23 @@
   :mode "\\.hs\\'")
 
 ;; ----------------------- ORG MODE ----------------------- ;;
-(setq inhibit-splash-screen t)
+(setopt inhibit-splash-screen t)
 (transient-mark-mode 1)
 
-(require 'org)
-(setq org-directory "~/org/")
-(setq org-default-notes-file (concat org-directory "refile.org"))
-(global-set-key (kbd "C-c c") 'org-capture)
+(use-package org
+  :ensure nil
+  :custom
+  (org-directory "~/org/")
+  (org-default-notes-file (concat org-directory "refile.org"))
+  :bind ("C-c c" . org-capture))
 
 (use-package olivetti
   :custom (olivetti-body-width 90)
   :hook (org-mode . olivetti-mode))
 
-(setq org-hide-emphasis-markers t)    ; hide *bold* markers, show just bold
-(setq org-pretty-entities t)          ; \alpha → α, \to → →
-(setq org-ellipsis " ▾")             ; nicer fold indicator
+(setopt org-hide-emphasis-markers t)    ; hide *bold* markers, show just bold
+(setopt org-pretty-entities t)          ; \alpha → α, \to → →
+(setopt org-ellipsis " ▾")             ; nicer fold indicator
 
 (use-package org-modern
   :hook (org-mode . org-modern-mode)
@@ -511,7 +504,7 @@
   (org-modern-table t)
   (org-modern-block-fringe t))
 
-(setq org-capture-templates
+(setopt org-capture-templates
       '(("w" "Workout Log" entry (file+datetree "~/org/workouts.org")
          "* %^{Workout Type|Push|Pull|Legs A (Quads)|Legs B (Hams)}\n:PROPERTIES:\n:TIME: %U\n:END:\n%?" 
          :empty-lines 1)))
@@ -548,3 +541,13 @@
 
 (use-package treemacs-icons-dired
   :hook (dired-mode . treemacs-icons-dired-enable-once))
+
+(use-package claude-code-ide
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :config
+  (claude-code-ide-emacs-tools-setup))
+
+;; So that emacs will refresh buffers when claude edits them on disk.
+(global-auto-revert-mode 1)
+(setopt auto-revert-avoid-polling t)
